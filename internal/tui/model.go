@@ -69,6 +69,8 @@ func (m Model) View() string {
 
 	if snap.Loser != "" {
 		s += renderGameOver(snap, m.PlayerID)
+	} else if snap.Waiting {
+		s += "\n" + renderWaiting()
 	}
 
 	return s

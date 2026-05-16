@@ -48,7 +48,6 @@ func main() {
 		wish.WithAddress(fmt.Sprintf("%s:%d", host, port)),
 		wish.WithHostKeyPath(hostKeyFile),
 		wish.WithMiddleware(
-			// Bubbletea middleware — runs AFTER connection limit check.
 			bubbletea.MiddlewareWithProgramHandler(
 				func(s ssh.Session) *tea.Program {
 					sessionID := s.Context().SessionID()
@@ -56,7 +55,7 @@ func main() {
 
 					model := tui.NewModel(sessionID, gl.InputCh())
 					opts := append(bubbletea.MakeOptions(s), tea.WithAltScreen())
-				p := tea.NewProgram(model, opts...)
+					p := tea.NewProgram(model, opts...)
 
 					reg.SetProgram(sessionID, p)
 
