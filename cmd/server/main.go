@@ -18,6 +18,10 @@ import (
 	"github.com/charmbracelet/wish"
 	"github.com/charmbracelet/wish/bubbletea"
 
+	"github.com/muesli/termenv"
+
+	"github.com/HeltoPojo/sshBattleArena/internal/game"
+	"github.com/HeltoPojo/sshBattleArena/internal/server"
 	"github.com/HeltoPojo/sshBattleArena/internal/tui"
 )
 
@@ -32,13 +36,51 @@ func main() {
 		log.Fatalf("host key: %v", err)
 	}
 
+	reg := server.NewRegistry()
+	broadcast := server.NewBroadcaster(reg)
+	gl := game.NewGameLoop(broadcast)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go gl.Run(ctx)
+
 	s, err := wish.NewServer(
 		wish.WithAddress(fmt.Sprintf("%s:%d", host, port)),
 		wish.WithHostKeyPath(hostKeyFile),
 		wish.WithMiddleware(
-			bubbletea.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-				return tui.NewModel(), []tea.ProgramOption{tea.WithAltScreen()}
-			}),
+			// Bubbletea middleware — runs AFTER connection limit check.
+			bubbletea.MiddlewareWithProgramHandler(
+				func(s ssh.Session) *tea.Program {
+					sessionID := s.Context().SessionID()
+					gl.AddPlayer(sessionID)
+
+					model := tui.NewModel(sessionID, gl.InputCh())
+					opts := append(bubbletea.MakeOptions(s), tea.WithAltScreen())
+				p := tea.NewProgram(model, opts...)
+
+					reg.SetProgram(sessionID, p)
+
+					go func() {
+						<-s.Context().Done()
+						gl.RemovePlayer(sessionID)
+						reg.Remove(sessionID)
+						gl.ResetIfEmpty()
+					}()
+
+					return p
+				}, termenv.ANSI256,
+			),
+			// Connection limiter — runs BEFORE bubbletea (middleware order is reversed in Wish).
+			func(next ssh.Handler) ssh.Handler {
+				return func(s ssh.Session) {
+					sessionID := s.Context().SessionID()
+					if !reg.TryRegister(sessionID) {
+						fmt.Fprintln(s, "Arena is full! Try again later.")
+						return
+					}
+					next(s)
+				}
+			},
 		),
 	)
 	if err != nil {
@@ -57,6 +99,7 @@ func main() {
 
 	<-done
 	log.Println("shutting down...")
+	cancel()
 	if err := s.Shutdown(context.Background()); err != nil {
 		log.Fatalf("shutdown error: %v", err)
 	}
