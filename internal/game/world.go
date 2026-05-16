@@ -5,11 +5,11 @@ import "time"
 // Game constants — tweak these to retune gameplay.
 const (
 	GridWidth        = 100
-	GridHeight       = 100
+	GridHeight       = 50
 	TickRate         = 100 * time.Millisecond // ~10 ticks/sec
 	BombFuse         = 60                     // ticks
 	BombCooldown     = 100                    // ticks
-	BombRadius       = 3
+	BombRadius       = 5
 	CommandResultTTL = 5 // ticks before result clears
 )
 
