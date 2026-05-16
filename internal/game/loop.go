@@ -91,6 +91,18 @@ func (gl *GameLoop) tick() {
 		}
 	}
 
+	for y := range GridHeight {
+		for x := range GridWidth {
+			cell := &w.Grid[y][x]
+			if cell.Type == CellExplosion {
+				cell.TTL--
+				if cell.TTL <= 0 {
+					*cell = Cell{}
+				}
+			}
+		}
+	}
+
 	remaining := w.Bombs[:0]
 	for i := range w.Bombs {
 		b := &w.Bombs[i]
@@ -141,8 +153,11 @@ func (gl *GameLoop) detonate(b *Bomb) {
 				continue
 			}
 			cell := &w.Grid[ny][nx]
-			if cell.Type == CellTrail || cell.Type == CellBomb {
-				*cell = Cell{} // clear to empty
+			switch cell.Type {
+			case CellTrail, CellBomb:
+				*cell = Cell{Type: CellExplosion, TTL: ExplosionTTL}
+			case CellEmpty:
+				*cell = Cell{Type: CellExplosion, TTL: ExplosionTTL}
 			}
 		}
 	}
@@ -168,6 +183,17 @@ func (gl *GameLoop) handleInput(ev InputEvent) {
 	w := gl.world
 	p, ok := w.Players[ev.PlayerID]
 	if !ok || !p.Alive {
+		return
+	}
+
+	// Block all input while waiting for a second player.
+	alive := 0
+	for _, pl := range w.Players {
+		if pl.Alive {
+			alive++
+		}
+	}
+	if alive < 2 {
 		return
 	}
 
@@ -213,7 +239,7 @@ func (gl *GameLoop) handleKeystroke(p *Player, key rune) {
 		return
 	}
 
-	if !unicode.IsPrint(key) {
+	if !unicode.IsPrint(key) || key == ' ' {
 		return
 	}
 
@@ -223,7 +249,7 @@ func (gl *GameLoop) handleKeystroke(p *Player, key rune) {
 		return
 	}
 	target := &w.Grid[ny][nx]
-	if target.Type != CellEmpty {
+	if target.Type != CellEmpty && target.Type != CellExplosion {
 		return
 	}
 

@@ -14,7 +14,12 @@ var (
 	p2Style     = lipgloss.NewStyle().Foreground(lipgloss.Color("5")) // magenta
 	bombStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("1")) // red
 	bombWarn    = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)
-	cmdStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("3")) // yellow
+	// Explosion animation styles: bright → dim as TTL decreases.
+	explode1 = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)  // bright red (fresh)
+	explode2 = lipgloss.NewStyle().Foreground(lipgloss.Color("208")).Bold(true) // orange
+	explode3 = lipgloss.NewStyle().Foreground(lipgloss.Color("220"))            // yellow
+	explode4 = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))            // dim (fading)
+	cmdStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))              // yellow
 	acceptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green
 	rejectStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1")) // red
 	dimStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
@@ -67,6 +72,8 @@ func renderGrid(snap game.Snapshot, myID string) string {
 				sb.WriteString(style.Render(string(cell.Rune)))
 			case game.CellBomb:
 				sb.WriteString(bombStyle.Render("*"))
+			case game.CellExplosion:
+				sb.WriteString(renderExplosionCell(cell.TTL))
 			default:
 				sb.WriteString(" ")
 			}
@@ -144,6 +151,22 @@ func trailStyle(ownerID string, _ []game.Player, myID string) lipgloss.Style {
 		return p1Style
 	}
 	return p2Style
+}
+
+// renderExplosionCell picks a glyph and color based on remaining TTL.
+// Higher TTL = fresh explosion (bright), lower = fading out.
+func renderExplosionCell(ttl int) string {
+	glyphs := []string{"░", "▒", "▓", "█"}
+	switch {
+	case ttl >= 4:
+		return explode1.Render(glyphs[3]) // full block, bright red
+	case ttl == 3:
+		return explode2.Render(glyphs[2]) // dark shade, orange
+	case ttl == 2:
+		return explode3.Render(glyphs[1]) // medium shade, yellow
+	default:
+		return explode4.Render(glyphs[0]) // light shade, dim
+	}
 }
 
 func dirName(d game.Direction) string {

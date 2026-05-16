@@ -11,6 +11,7 @@ const (
 	BombCooldown     = 100                    // ticks
 	BombRadius       = 5
 	CommandResultTTL = 5 // ticks before result clears
+	ExplosionTTL     = 4 // ticks the explosion animation lasts
 )
 
 type World struct {
@@ -54,6 +55,7 @@ type Snapshot struct {
 	Tick    int
 	Loser   string // set to the dead player's ID on kill; winner stays connected
 	Winner  string // set to the surviving player's ID on kill
+	Waiting bool   // true when fewer than 2 players are connected
 }
 
 func (w *World) ResetForWinner(winnerID string) {
@@ -92,9 +94,14 @@ func (w *World) TakeSnapshot(forPlayerID string) Snapshot {
 		Players: make(map[string]Player, len(w.Players)),
 		Tick:    w.Tick,
 	}
+	alive := 0
 	for id, p := range w.Players {
 		s.Players[id] = *p
+		if p.Alive {
+			alive++
+		}
 	}
+	s.Waiting = alive < 2
 	s.Bombs = make([]Bomb, len(w.Bombs))
 	copy(s.Bombs, w.Bombs)
 	return s

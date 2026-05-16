@@ -46,12 +46,14 @@ const (
 	CellBorder          // indestructible wall
 	CellTrail           // letter trail (destructible)
 	CellBomb            // active bomb
+	CellExplosion       // explosion animation (short-lived)
 )
 
 type Cell struct {
 	Type    CellType
 	Rune    rune   // the letter for CellTrail, 0 otherwise
 	OwnerID string // player who placed it (trail or bomb)
+	TTL     int    // ticks remaining for CellExplosion
 }
 
 type CommandResult int
