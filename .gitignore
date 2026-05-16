@@ -1,0 +1,51 @@
+# Compiled binaries
+/maligna
+/server
+*.exe
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Test & coverage artifacts
+*.test
+*.out
+coverage.*
+*.prof
+
+# Go workspace file (machine-specific)
+go.work
+go.work.sum
+
+# Dependency vendor directory (omit if you commit vendored deps)
+/vendor/
+
+# SSH host keys — NEVER commit these
+*.pem
+*_host_key
+*_host_key.pub
+id_rsa
+id_rsa.pub
+.ssh/
+
+# Environment & local config
+.env
+.env.local
+*.local
+
+# Editor & IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Claude Code local files
+.claude/settings.local.json
+CLAUDE.local.md
+CLAUDE.md
